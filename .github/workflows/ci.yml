@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         libfuse: [libfuse-dev, libfuse3-dev]
-        features: [ '' ]
+        features: [""]
 
     env:
       RUSTFLAGS: --deny warnings
@@ -165,7 +165,7 @@ jobs:
         uses: cross-platform-actions/action@v1.0.0
         with:
           operating_system: freebsd
-          version: '14.3'
+          version: "14.3"
           shell: bash
           run: |
             sudo kldload fusefs
@@ -182,11 +182,15 @@ jobs:
             ./configure
             make pjdfstest
             cd $GITHUB_WORKSPACE
-            cargo build --all --all-targets
-            cargo doc --all --no-deps
-            cargo test --all --all-targets -- --skip=mnt::test::mount_unmount
-            cargo test --all --all-targets -- --skip=mnt::test::mount_unmount
+
+            # BSD not supported but we still want to keep sync tested to
+            # align with the upstream
+            cargo build --all --all-targets --no-default-features
+            cargo doc --all --no-deps --no-default-features
+            cargo test --all --all-targets --no-default-features -- --skip=mnt::test::mount_unmount
+            cargo test --all --all-targets --no-default-features -- --skip=mnt::test::mount_unmount
             sudo cargo run -p fuser-tests -- bsd-mount
+
             sudo ./tests/bsd_pjdfs.sh
             # Clean up root-owned files so cross-platform-actions rsync teardown doesn't fail
             sudo rm -rf target
@@ -203,13 +207,13 @@ jobs:
       - name: Maximize build space
         uses: AdityaGarg8/remove-unwanted-software@v5
         with:
-          remove-android: 'true'
-          remove-dotnet: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
+          remove-android: "true"
+          remove-dotnet: "true"
+          remove-haskell: "true"
+          remove-codeql: "true"
           # remove-docker-images: 'true'
-          remove-large-packages: 'true'
-          remove-cached-tools: 'true'
+          remove-large-packages: "true"
+          remove-cached-tools: "true"
           # verbose: 'true'
 
       - uses: actions/checkout@v4
