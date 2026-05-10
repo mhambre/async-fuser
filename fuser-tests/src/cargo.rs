@@ -15,6 +15,10 @@ pub(crate) async fn cargo_build_example(
     let features_flag = features_to_flags(features);
 
     let mut build_args = vec!["cargo", "build", "--example", example];
+    // Avoid building async on freebsd, but still allow usage for sync compat
+    if cfg!(target_os = "freebsd") {
+        build_args.push("--no-default-features");
+    }
     build_args.extend(features_flag.as_deref());
     command_success(build_args).await?;
 
