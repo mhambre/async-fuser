@@ -95,6 +95,8 @@ impl AsyncRequestWithSender {
                 | ll::Operation::Forget(_)
                 | ll::Operation::BatchForget(_)
                 | ll::Operation::Write(_)
+                | ll::Operation::FSync(_)
+                | ll::Operation::FSyncDir(_)
                 | ll::Operation::Release(_)
                 | ll::Operation::ReleaseDir(_)
                 | ll::Operation::ReadDirPlus(_) => {}
@@ -301,6 +303,17 @@ impl AsyncRequestWithSender {
                     .await?;
                 self.reply(&response).await
             }
+            ll::Operation::Flush(x) => {
+                filesystem
+                    .flush(
+                        self.request_header(),
+                        request.nodeid(),
+                        x.file_handle(),
+                        x.lock_owner(),
+                    )
+                    .await?;
+                self.reply_empty().await
+            }
             ll::Operation::Release(x) => {
                 filesystem
                     .release(
@@ -314,9 +327,32 @@ impl AsyncRequestWithSender {
                     .await?;
                 self.reply_empty().await
             }
+            ll::Operation::FSync(x) => {
+                filesystem
+                    .fsync(
+                        self.request_header(),
+                        request.nodeid(),
+                        x.file_handle(),
+                        x.fdatasync(),
+                    )
+                    .await?;
+                self.reply_empty().await
+            }
             ll::Operation::OpenDir(x) => {
                 let response = filesystem
                     .opendir(self.request_header(), request.nodeid(), x.flags())
+                    .await?;
+                self.reply(&response).await
+            }
+            ll::Operation::ReadDirPlus(x) => {
+                let response = filesystem
+                    .readdirplus(
+                        self.request_header(),
+                        request.nodeid(),
+                        x.file_handle(),
+                        x.size(),
+                        x.offset(),
+                    )
                     .await?;
                 self.reply(&response).await
             }
@@ -327,6 +363,17 @@ impl AsyncRequestWithSender {
                         request.nodeid(),
                         x.file_handle(),
                         x.flags(),
+                    )
+                    .await?;
+                self.reply_empty().await
+            }
+            ll::Operation::FSyncDir(x) => {
+                filesystem
+                    .fsyncdir(
+                        self.request_header(),
+                        request.nodeid(),
+                        x.file_handle(),
+                        x.fdatasync(),
                     )
                     .await?;
                 self.reply_empty().await
@@ -405,6 +452,23 @@ impl AsyncRequestWithSender {
                     .await?;
                 self.reply_empty().await
             }
+            ll::Operation::IoCtl(x) => {
+                if x.unrestricted() {
+                    return Err(Errno::ENOSYS);
+                }
+                let response = filesystem
+                    .ioctl(
+                        self.request_header(),
+                        request.nodeid(),
+                        x.file_handle(),
+                        x.flags(),
+                        x.command(),
+                        x.in_data(),
+                        x.out_size(),
+                    )
+                    .await?;
+                self.reply(&response).await
+            }
             ll::Operation::CopyFileRange(x) => {
                 let (i, o) = (x.src()?, x.dest()?);
                 let response = filesystem
@@ -422,8 +486,20 @@ impl AsyncRequestWithSender {
                     .await?;
                 self.reply(&response).await
             }
-            _ => {
-                error!("Operation not implemented in the async dispatcher yet");
+            ll::Operation::Lseek(x) => {
+                let response = filesystem
+                    .lseek(
+                        self.request_header(),
+                        request.nodeid(),
+                        x.file_handle(),
+                        x.offset(),
+                        x.whence(),
+                    )
+                    .await?;
+                self.reply(&response).await
+            }
+            op => {
+                error!("Operation not implemented in the async dispatcher yet: {op}");
                 Err(Errno::ENOSYS)
             }
         }

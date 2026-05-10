@@ -552,6 +552,12 @@ impl DirEntPlusList {
     pub(crate) fn new(max_size: usize) -> Self {
         Self(EntListBuf::new(max_size))
     }
+
+    #[cfg(feature = "async")]
+    pub(crate) fn as_bytes(&self) -> &[u8] {
+        self.0.buf.as_slice()
+    }
+
     /// Add an entry to the directory reply buffer. Returns true if the buffer is full.
     /// A transparent offset value can be provided for each entry. The kernel uses these
     /// value to request the next entries in further readdir calls
