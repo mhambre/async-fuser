@@ -11,12 +11,12 @@ use log::{debug, warn};
 use tokio::io;
 
 use crate::{
-    AccessFlags, BsdFileFlags, Config, CopyFileRangeFlags, Errno, FileHandle, INodeNo,
+    AccessFlags, BsdFileFlags, Config, CopyFileRangeFlags, Errno, FileHandle, INodeNo, IoctlFlags,
     KernelConfig, LockOwner, OpenFlags, RenameFlags, Request, TimeOrNow, WriteFlags,
     reply_async::{
-        AttrResponse, CreateResponse, DataResponse, DirectoryResponse, EntryResponse,
-        GetAttrResponse, LookupResponse, OpenResponse, ReadResponse, StatfsResponse, WriteResponse,
-        XattrResponse,
+        AttrResponse, CreateResponse, DataResponse, DirectoryPlusResponse, DirectoryResponse,
+        EntryResponse, GetAttrResponse, IoctlResponse, LookupResponse, LseekResponse, OpenResponse,
+        ReadResponse, StatfsResponse, WriteResponse, XattrResponse,
     },
     session_async::AsyncSessionBuilder,
 };
@@ -275,6 +275,21 @@ pub trait AsyncFilesystem: Send + Sync + 'static {
         Err(Errno::ENOTSUP)
     }
 
+    /// Flush method.
+    async fn flush(
+        &self,
+        req: &Request,
+        ino: INodeNo,
+        fh: FileHandle,
+        lock_owner: LockOwner,
+    ) -> Result<(), Errno> {
+        warn!(
+            "flush not implemented for inode {}, fh {:?}, lock_owner {:?}",
+            ino, fh, lock_owner
+        );
+        Err(Errno::ENOSYS)
+    }
+
     /// Release an open file.
     async fn release(
         &self,
@@ -330,6 +345,52 @@ pub trait AsyncFilesystem: Send + Sync + 'static {
     ) -> Result<(), Errno> {
         warn!("releasedir not implemented for inode {}, fh {:?}", ino, fh);
         Err(Errno::ENOTSUP)
+    }
+
+    /// Construct a directory listing response with attributes.
+    async fn readdirplus(
+        &self,
+        req: &Request,
+        ino: INodeNo,
+        file_handle: FileHandle,
+        size: u32,
+        offset: u64,
+    ) -> Result<DirectoryPlusResponse, Errno> {
+        warn!(
+            "readdirplus not implemented for inode {}, offset {}, size {}",
+            ino, offset, size
+        );
+        Err(Errno::ENOSYS)
+    }
+
+    /// Synchronize file contents.
+    async fn fsync(
+        &self,
+        req: &Request,
+        ino: INodeNo,
+        fh: FileHandle,
+        datasync: bool,
+    ) -> Result<(), Errno> {
+        warn!(
+            "fsync not implemented for inode {}, fh {:?}, datasync {}",
+            ino, fh, datasync
+        );
+        Err(Errno::ENOSYS)
+    }
+
+    /// Synchronize directory contents.
+    async fn fsyncdir(
+        &self,
+        req: &Request,
+        ino: INodeNo,
+        fh: FileHandle,
+        datasync: bool,
+    ) -> Result<(), Errno> {
+        warn!(
+            "fsyncdir not implemented for inode {}, fh {:?}, datasync {}",
+            ino, fh, datasync
+        );
+        Err(Errno::ENOSYS)
     }
 
     /// Get file system statistics.
@@ -430,6 +491,29 @@ pub trait AsyncFilesystem: Send + Sync + 'static {
         Err(Errno::ENOTSUP)
     }
 
+    /// Control device.
+    async fn ioctl(
+        &self,
+        req: &Request,
+        ino: INodeNo,
+        fh: FileHandle,
+        flags: IoctlFlags,
+        cmd: u32,
+        in_data: &[u8],
+        out_size: u32,
+    ) -> Result<IoctlResponse, Errno> {
+        warn!(
+            "ioctl not implemented for inode {}, fh {:?}, flags {:?}, cmd {}, in_data.len() {}, out_size {}",
+            ino,
+            fh,
+            flags,
+            cmd,
+            in_data.len(),
+            out_size
+        );
+        Err(Errno::ENOSYS)
+    }
+
     /// Copy a file range.
     async fn copy_file_range(
         &self,
@@ -448,6 +532,22 @@ pub trait AsyncFilesystem: Send + Sync + 'static {
             ino_in, fh_in, offset_in, ino_out, fh_out, offset_out, len, flags
         );
         Err(Errno::ENOTSUP)
+    }
+
+    /// Reposition read/write file offset.
+    async fn lseek(
+        &self,
+        req: &Request,
+        ino: INodeNo,
+        fh: FileHandle,
+        offset: i64,
+        whence: i32,
+    ) -> Result<LseekResponse, Errno> {
+        warn!(
+            "lseek not implemented for inode {}, fh {:?}, offset {}, whence {}",
+            ino, fh, offset, whence
+        );
+        Err(Errno::ENOSYS)
     }
 }
 

@@ -188,7 +188,6 @@ jobs:
             cargo build --all --all-targets --no-default-features
             cargo doc --all --no-deps --no-default-features
             cargo test --all --all-targets --no-default-features -- --skip=mnt::test::mount_unmount
-            cargo test --all --all-targets --no-default-features -- --skip=mnt::test::mount_unmount
             sudo cargo run -p fuser-tests -- bsd-mount
 
             sudo ./tests/bsd_pjdfs.sh
